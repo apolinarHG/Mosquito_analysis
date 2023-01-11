@@ -1,0 +1,15 @@
+Sample_ID	ID	SampleID	sito	tipo
+eggs_s1	eggs_s1	eggs_s1	s1	eggs
+eggs_s2	eggs_s2	eggs_s2	s2	eggs
+larves_s1	larves_s1	larves_s1	s1	larves
+larves_s2	larves_s2	larves_s2	s2	larves
+females_s1	females_s1	females_s1	s1	females
+females_s2	females_s2	females_s2	s2	females
+females_s3	females_s3	females_s3	s3	females
+females_s4	females_s4	females_s4	s4	females
+females_s5	females_s5	females_s5	s5	females
+males_s1	males_s1	males_s1	s1	males
+males_s2	males_s2	males_s2	s2	males
+males_s3	males_s3	males_s3	s3	males
+males_s4	males_s4	males_s4	s4	males
+males_s5	males_s5	males_s5	s5	males
