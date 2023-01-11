@@ -18,3 +18,20 @@ library(tidverse)
 library(tidyverse)
 library(UpSetR)
 library(vegan)
+
+### Load files-----------
+
+otu <- as.matrix(read.table("moscos_16S_os.txt", header = T, row.names = 1, sep = "\t"))
+OTU = otu_table(otu_table(otu, taxa_are_rows = T), "sample_data")
+taximat = as.matrix(read.table("moscos_16S_tax_os.txt", header=T, row.names=1, sep = "\t"))
+
+taxi=tax_table(taximat)
+mosquito = phyloseq (OTU, taxi)
+
+mosquito_data=read.table("metadata_test.txt", header = T, row.names = 1, sep = "\t")
+sampledata=sample_data(data.frame(id=mosquito_data$SampleID, sitio=mosquito_data$sito, tipo=mosquito_data$tipo, row.names = sample_names(mosquito)))
+
+mosquito = phyloseq(OTU, taxi, sampledata)
+
+mosquito
+sample_data(mosquito)
