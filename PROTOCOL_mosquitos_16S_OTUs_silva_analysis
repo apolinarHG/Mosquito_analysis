@@ -21,14 +21,14 @@ library(vegan)
 
 ### Load files-------------------------
 
-otu <- as.matrix(read.table("moscos_16S_os.txt", header = T, row.names = 1, sep = "\t"))
+otu <- as.matrix(read.table("TABLE_moscos_16S_os.txt", header = T, row.names = 1, sep = "\t"))
 OTU = otu_table(otu_table(otu, taxa_are_rows = T), "sample_data")
-taximat = as.matrix(read.table("moscos_16S_tax_os.txt", header=T, row.names=1, sep = "\t"))
+taximat = as.matrix(read.table("TABLE_moscos_16S_tax_os.txt", header=T, row.names=1, sep = "\t"))
 
 taxi=tax_table(taximat)
 mosquito = phyloseq (OTU, taxi)
 
-mosquito_data=read.table("metadata_test.txt", header = T, row.names = 1, sep = "\t")
+mosquito_data=read.table("TABLE_metadata_test.txt", header = T, row.names = 1, sep = "\t")
 sampledata=sample_data(data.frame(id=mosquito_data$SampleID, sitio=mosquito_data$sito, tipo=mosquito_data$tipo, row.names = sample_names(mosquito)))
 
 mosquito = phyloseq(OTU, taxi, sampledata)
@@ -323,14 +323,14 @@ stage_ups
 
 # -----------------------------Wolbachia-------------------------
 
-wotu <- as.matrix(read.table("wolbachia.tab", header = T, row.names = 1, sep = " "))
+wotu <- as.matrix(read.table("TABLE_wolbachia.tab", header = T, row.names = 1, sep = " "))
 wOTU = otu_table(otu_table(otu, taxa_are_rows = T), "sample_data")
-taximat = as.matrix(read.table("wolbachia.tax", header=T, row.names=1, sep = " "))
+taximat = as.matrix(read.table("TABLE_wolbachia.tax", header=T, row.names=1, sep = " "))
 
 taxi=tax_table(taximat)
 wolbachia = phyloseq (OTU, taxi)
 
-mosquito_data=read.table("metadata_test.txt", header = T, row.names = 1, sep = "\t")
+mosquito_data=read.table("TABLE_metadata_test.txt", header = T, row.names = 1, sep = "\t")
 sampledata=sample_data(data.frame(id=mosquito_data$SampleID, sitio=mosquito_data$sito, tipo=mosquito_data$tipo, row.names = sample_names(wolbachia)))
 
 head(mosquito_data)
@@ -399,26 +399,16 @@ wolbachia_ups_site <- upset(merge3, sets = c("s1", "s2", "s3", "s4", "s5"),
 wolbachia_ups_site
 
 
-bpprc <- read.table("/home/apolinar/para_articulo/dfam_cry/tabla_cry_to01", header=TRUE, row.names = 1)
-crydom_ups_site <- upset(bpprc, sets = c("d1", "d2", "d3"),
-                            nsets = 3, number.angles = 0, point.size = 1.5, line.size = 0.5,
-                            sets.bar.color = c("green4",	"yellow4",	"orangered4"),
-                            mainbar.y.label = "dom intersections", sets.x.label = "dom", nintersects=19, 
-                            order.by="freq",  mb.ratio = c(0.55, 0.45), keep.order = TRUE)
-
-crydom_ups_site
-
-
 # ---------------------------- bacillus--------------------------
 
-otu <- as.matrix(read.table("/home/testuser/Documents/UAMC/mosquitos/para_articulo/bacillus.tab", header = T, row.names = 1, sep = " "))
+otu <- as.matrix(read.table("TABLE_bacillus.tab", header = T, row.names = 1, sep = " "))
 OTU = otu_table(otu_table(otu, taxa_are_rows = T), "sample_data")
-taximat = as.matrix(read.table("/home/testuser/Documents/UAMC/mosquitos/para_articulo/bacillus.tax", header=T, row.names=1, sep = " "))
+taximat = as.matrix(read.table("TABLE_bacillus.tax", header=T, row.names=1, sep = " "))
 
 taxi=tax_table(taximat)
 bacillus = phyloseq (OTU, taxi)
 
-mosquito_data=read.table("/home/testuser/Documents/UAMC/mosquitos/para_articulo/r_scrip/metadata_test.txt", header = T, row.names = 1, sep = "\t")
+mosquito_data=read.table("TABLE_metadata_test.txt", header = T, row.names = 1, sep = "\t")
 sampledata=sample_data(data.frame(id=mosquito_data$SampleID, sitio=mosquito_data$sito, tipo=mosquito_data$tipo, row.names = sample_names(bacillus)))
 
 head(mosquito_data)
