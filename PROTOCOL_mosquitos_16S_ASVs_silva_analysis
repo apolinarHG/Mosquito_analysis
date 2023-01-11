@@ -14,14 +14,14 @@ library(RColorBrewer)
 
 #load files -------------------------------
 
-asv <- as.matrix(read.table("ASVs_counts.tsv", header = T, row.names = 1, sep = "\t"))
+asv <- as.matrix(read.table("TABLE_ASVs_counts.tsv", header = T, row.names = 1, sep = "\t"))
 ASV = otu_table(otu_table(asv, taxa_are_rows = T), "sample_data")
-taximat = as.matrix(read.table("ASVs_taxonomy.tsv", header=T, row.names=1, sep = "\t"))
+taximat = as.matrix(read.table("TABLE_ASVs_taxonomy.tsv", header=T, row.names=1, sep = "\t"))
 
 taxi=tax_table(taximat)
 mosquito_asv = phyloseq (ASV, taxi)
 
-mosquito_data=read.table("metadata_asv.txt", header = T, row.names = 1, sep = "\t")
+mosquito_data=read.table("TABLE_metadata_asv.txt", header = T, row.names = 1, sep = "\t")
 sampledata=sample_data(data.frame(id=mosquito_data$id, tipo=mosquito_data$type, site=mosquito_data$site, row.names = sample_names(mosquito_asv)))
 
 mosquito_asv = phyloseq(ASV, taxi, sampledata)
