@@ -1,0 +1,273 @@
+#mosquitos 16S ASV
+
+library(vegan)
+library (phyloseq)
+library (ggplot2)
+library(DESeq2)
+library(ape)
+library(gplots)
+library(reshape2)
+library(UpSetR)
+library(RColorBrewer)
+library (ggplot2)
+library(RColorBrewer)
+
+#load files -------------------------------
+
+asv <- as.matrix(read.table("ASVs_counts.tsv", header = T, row.names = 1, sep = "\t"))
+ASV = otu_table(otu_table(asv, taxa_are_rows = T), "sample_data")
+taximat = as.matrix(read.table("ASVs_taxonomy.tsv", header=T, row.names=1, sep = "\t"))
+
+taxi=tax_table(taximat)
+mosquito_asv = phyloseq (ASV, taxi)
+
+mosquito_data=read.table("metadata_asv.txt", header = T, row.names = 1, sep = "\t")
+sampledata=sample_data(data.frame(id=mosquito_data$id, tipo=mosquito_data$type, site=mosquito_data$site, row.names = sample_names(mosquito_asv)))
+
+mosquito_asv = phyloseq(ASV, taxi, sampledata)
+
+mosquito_asv
+sample_data(mosquito_asv)
+
+#----------------------richness-------------------
+
+estimate_richness(mosquito_asv)
+
+#------------------------taxomonic summary-------------------------
+
+#by genus
+
+mosquitog <- tax_glom(mosquito_asv, taxrank = "Genus")
+mosquito_g=subset_samples(mosquitog)
+
+mosquitog
+stage=merge_samples(mosquitog, "tipo", fun=sum)
+stage_transf <- transform_sample_counts(stage, function(ASV) ASV/sum(ASV))
+stage_g_genus <- psmelt(stage_transf)
+stage_g_genus$Genus <- as.character(stage_g_genus$Genus)
+#rename genus with < 1.5% abundance or other value
+stage_g_genus$Genus[stage_g_genus$Abundance < 0.022] <- "<0.022 abund."
+unique(stage_g_genus$Genus)
+
+#plot with condensed phyla into "unknown" category
+options(repr.plot.width=10, repr.plot.height=5)
+
+pg <- ggplot(data = stage_g_genus, aes(x=Sample, y=Abundance, fill=Genus))
+pg + geom_bar(aes(), stat = "identity", position = "stack") +
+  scale_fill_manual(values = c("gray", "gold1", "forestgreen", "brown4", "red", "green1", "darkolivegreen3",
+                               "lightskyblue", "navyblue", "yellowgreen", "steelblue3", "red3", "yellow3",
+                               "yellow4", "yellowgreen", "coral", "coral4", "darkorange", "palevioletred3",
+                               "darkslategray3", "salmon", "lightseagreen", "blue", "darkturquoise")) + xlab("stage") + ylab("Relative abundance") +
+  theme(legend.position = "right", legend.text = element_text(size = 9)) + guides(fill=guide_legend(nrow = 15))+
+  theme(axis.text.x = element_text(angle = 90, hjust = 1), axis.text = element_text(size = 12)) + scale_x_discrete(limits=c("eggs", "larvae", "females", "males"))
+  
+#by sample---------------------------------
+
+samples_transf <- transform_sample_counts(mosquitog, function(ASV) ASV/sum(ASV))
+samples_g_genus <- psmelt(samples_transf)
+samples_g_genus$Genus <- as.character(samples_g_genus$Genus)
+
+#rename genus with < 1.5% abundance or other value
+samples_g_genus$Genus[samples_g_genus$Abundance < 0.04] <- "<0.04 abund."
+unique(samples_g_genus$Genus)
+
+#plot with condensed phyla into "unknown" category
+options(repr.plot.width=10, repr.plot.height=5)
+pgs <- ggplot(data = samples_g_genus, aes(x=Sample, y=Abundance, fill=Genus))
+pgs + geom_bar(aes(), stat = "identity", position = "stack") +
+  scale_fill_manual(values = c("gray", "forestgreen", "red", "green1", "darkolivegreen3", "lightskyblue","yellow4",
+                               "navyblue", "yellowgreen", "steelblue3", "red3", "yellow3", "yellowgreen", "coral",
+                               "palevioletred3", "darkslategray3", "salmon", "chartreuse", "deeppink3", "lightseagreen",
+                               "blue", "darkturquoise")) + xlab("stage") + ylab("Relative abundance") +
+  theme(legend.position = "right", legend.text = element_text(size = 9)) + guides(fill=guide_legend(nrow = 15))+
+  theme(axis.text.x = element_text(angle = 90, hjust = 1), axis.text = element_text(size = 12)) + scale_x_discrete(limits=c("eggs_s1", "eggs_s2", "larvae_s1", "larvae_s2", "females_s1",
+                                                                                                                            "females_s2", "females_s3", "females_s4", "females_s5", "males_s1",
+                                                                                                                            "males_s2", "males_s3", "males_s4", "males_s5"))
+
+
+#Taxonomic summary at phyla level by type site-----------------
+
+merge3 = merge_samples(mosquito_asv, "tipo")
+sexar_transf<-transform_sample_counts(merge3, function(ASV) ASV/sum(ASV))
+
+tipe_genus <- tax_glom(sexar_transf, taxrank = 'Genus')
+#sexar_genus # should list # taxa as # phyla
+sexar_g_genus<- psmelt(tipe_genus) # create dataframe from phyloseq object
+sexar_g_genus$Genus <- as.character(sexar_g_genus$Genus) #convert to character
+
+#simple way to rename genus with < 1.5% abundance
+sexar_g_genus$Genus[sexar_g_genus$Abundance < 0.015] <- "< 0.015 abund."
+
+unique(sexar_g_genus$Genus)
+
+#plot with condensed phyla into "unknown" category
+options(repr.plot.width=10, repr.plot.height=5)
+
+d <- ggplot(data=sexar_g_genus, aes(x=Sample, y=Abundance, fill=Genus))
+d + geom_bar(aes(), stat="identity", position="stack") +
+  scale_fill_manual(values = c("gray","royalblue4", "deepskyblue", "blue", "cyan2",
+                               "gold1", "forestgreen", "firebrick", "mediumspringgreen", "darkorange1",
+                               "saddlebrown", "slategray2", "seagreen", "snow4","black", "darkgoldenrod1", 
+                               "darkseagreen", "darkorchid", "darkolivegreen1", "lightskyblue", "deeppink", 
+                               "khaki2", "firebrick", "brown1", "cyan3", "royalblue2",
+                               "darksalmon","darkseagreen", "green", "purple3","red", "green4", "pink" )) +
+  xlab("Sites") + ylab("Relative abundance")+
+  theme(legend.position="right", legend.text=element_text(size=9)) + guides(fill=guide_legend(nrow=15))+
+  theme(axis.text.x = element_text(angle = 90, hjust = 1), axis.text=element_text(size=12))
+  
+  
+#by phylum and stage-----------------------------------
+
+mosquitog <- tax_glom(mosquito_asv, taxrank = "Phylum")
+
+stage=merge_samples(mosquitog, "tipo", fun=sum)
+stage_transf <- transform_sample_counts(stage, function(ASV) ASV/sum(ASV))
+stage_p_phylum <- psmelt(stage_transf)
+stage_p_phylum$Phylum <- as.character(stage_p_phylum$Phylum)
+
+#rename genus with < 1.5% abundance or other value
+stage_p_phylum$Phylum[stage_p_phylum$Abundance < 0.006] <- "<0.006 abund."
+unique(stage_p_phylum$Phylum)
+
+#plot with condensed phyla into "unknown" category
+options(repr.plot.width=10, repr.plot.height=5)
+pg <- ggplot(data = stage_p_phylum, aes(x=Sample, y=Abundance, fill=Phylum))
+pg + geom_bar(aes(), stat = "identity", position = "stack") +
+  scale_fill_manual(values = c("gray", "lightseagreen", "khaki1", "chartreuse4", "black", "deeppink3", "chartreuse3", "lightblue",
+                               "firebrick1", "darkolivegreen1", "yellow2", "orange1", "dodgerblue4", "springgreen3",
+                               "coral", "yellow")) + xlab("stage") + ylab("Relative abundance") +
+  theme(legend.position = "right", legend.text = element_text(size = 9)) + guides(fill=guide_legend(nrow = 15))+
+  theme(axis.text.x = element_text(angle = 90, hjust = 1), axis.text = element_text(size = 12)) + scale_x_discrete(limits=c("eggs", "larvae", "females", "males"))
+  
+#by sample ------------------------------------------------------
+
+samples_transf <- transform_sample_counts(mosquitog, function(OTU) OTU/sum(OTU))
+samples_p_phylum <- psmelt(samples_transf)
+samples_p_phylum$Phylum <- as.character(samples_p_phylum$Phylum)
+
+#rename genus with < 1.5% abundance or other value
+samples_p_phylum$Phylum[samples_p_phylum$Abundance < 0.02] <- "<0.02 abund."
+unique(samples_p_phylum$Phylum)
+
+#plot with condensed phyla into "unknown" category
+options(repr.plot.width=10, repr.plot.height=5)
+pgs <- ggplot(data = samples_p_phylum, aes(x=Sample, y=Abundance, fill=Phylum))
+pgs + geom_bar(aes(), stat = "identity", position = "stack") +
+  scale_fill_manual(values = c("gray", "khaki1", "chartreuse4", "deeppink3", "chartreuse3", "firebrick1", "yellow2", "orange1", "dodgerblue4", "coral", "springgreen3")) + xlab("stage") + ylab("Relative abundance") +
+  theme(legend.position = "right", legend.text = element_text(size = 9)) + guides(fill=guide_legend(nrow = 15))+
+  theme(axis.text.x = element_text(angle = 90, hjust = 1), axis.text = element_text(size = 12)) + scale_x_discrete(limits=c("eggs_s1", "eggs_s2", "larvaes_s1", "larvaes_s2", "females_s1",
+                                                                                                                            "females_s2", "females_s3", "females_s4", "females_s5", "males_s1",
+                                                                                                                            "males_s2", "males_s3", "males_s4", "males_s5"))
+
+##---------------------------orderings---------------------
+
+
+gp.ord <- ordinate(mosquito_asv, "PCoA", "bray")
+ord1 <- plot_ordination(mosquito_asv, gp.ord, type="id", color= "tipo", shape="site")
+ord2 <- ord1 + scale_shape_manual(values=c(15,16,17,18,3))+theme(axis.text.x = element_text(angle = 90, hjust = 1), axis.text=element_text(size=12),
+                                                                 legend.text=element_text(size=12),strip.text.x = element_text(size = 12))+geom_point(size=4)
+ord2
+
+gp.ord <- ordinate(mosquito_asv, "NMDS", "bray")
+ord3 <- plot_ordination(mosquito_asv, gp.ord, type="Sample_ID", color= "tipo", shape="site", label="tipo")
+ord4 <- ord3 + scale_shape_manual(values=c(15,16,17,18,3)) +theme(axis.text.x = element_text(angle = 90, hjust = 1), 
+                                                                  axis.text=element_text(size=12), 
+                                                                  legend.text=element_text(size=12), 
+                                                                  strip.text.x = element_text(size = 12)) +geom_point(size=4)
+ord4
+
+
+
+#--------------------------Upsets-----------------------------
+
+library(UpSetR)
+library(RColorBrewer)
+
+mosquito01 <- ASV
+mosquito01[mosquito01 > 0] = 1
+colnames(mosquito01) <- c("eggs_s1", "eggs_s2", "larvaes_s1", "larvaes_s2", "females_s1",
+                          "females_s2", "females_s3", "females_s4", "females_s5", "males_s1",
+                          "males_s2", "males_s3", "males_s4", "males_s5")
+head(mosquito01,5)
+
+write.csv(mosquito01, "momosquito.csv")
+romosqutio <- read.csv("momosquito.csv", header=T, row.names=1)
+head(romosqutio, 5)
+
+getPalette = colorRampPalette(brewer.pal(8, "Accent"))
+paleto = getPalette(14)
+
+mosquitos_asv_ups <- upset(romosqutio, nsets = 14, number.angles = 0, point.size = 1.5, line.size = 0.5, sets.bar.color = c("#006600", "#336633",
+                                                                                                                            "#FFFF00", "#FFFF66",
+                                                                                                                            "#0066FF", "#0033FF", "#003399",
+                                                                                                                            "#FF66CC", "#FF3366",
+                                                                                                                            "#3366CC", "#6699FF", 
+                                                                                                                            "#FF6699", "#FF33CC", "#660066"),
+                                                                                                                            mainbar.y.label = "ASVs intersections", sets.x.label = "ASVs per sample", nintersects=60, 
+                                                                                                                            order.by="freq",  mb.ratio = c(0.55, 0.45))
+mosquitos_asv_ups
+
+#upset asv by stage-----------------------------
+
+library(svglite)
+merge2 = merge_samples(mosquito_asv, "tipo")
+merge2 <- as.table(t(otu_table(merge2)))
+merge2 <- replace(merge2, merge2>0, 1)
+
+write.table(merge2,"merge2.tmp")
+merge2 <- read.table("merge2.tmp", header=TRUE, row.names = 1)
+head(merge2, 113)
+stage_ups <- upset(merge2, nsets = 14, number.angles = 0, point.size = 1.5, line.size = 0.5, sets.bar.color = c("#336633", "#FFFF00", "#6699FF", "#FF66CC"),
+                   mainbar.y.label = "ASVs intersections", sets.x.label = "ASVs per stage", nintersects=19, 
+                   order.by="freq",  mb.ratio = c(0.55, 0.45))
+
+stage_ups
+
+#upset complete by Genus----------------------------------------
+
+mosquito_genus <-transform_sample_counts(mosquito_asv, function(x) x / sum(x))
+mosquito6 <- tax_glom(mosquito_genus, taxrank = "Genus")
+mosquito6
+
+# Extract abundance matrix from the phyloseq object
+ASV1 = as(otu_table(mosquito6), "matrix")
+# transpose if necessary
+#if(taxa_are_rows(mosquito6)){OTU1 <- t(OTU1)}
+# Coerce to data.frame
+ASVdf = as.data.frame(ASV1)
+
+mosquito601 <- ASV1
+mosquito601[mosquito601 > 0] = 1
+colnames(mosquito601) <- c("eggs_s1", "eggs_s2", "larves_s1", "larves_s2", "females_s1",
+                           "females_s2", "females_s3", "females_s4", "females_s5", "males_s1",
+                           "males_s2", "males_s3", "males_s4", "males_s5")
+head(mosquito601,5)
+
+
+getPalette = colorRampPalette(brewer.pal(8, "Accent"))
+paleto = getPalette(14)
+
+mosquitos_ups <- upset(romosqutio, nsets = 14, number.angles = 0, point.size = 1.5, line.size = 0.5, sets.bar.color = c("#006600", "#336633", "#FFFF00", "#FFFF66", "#0066FF", "#0033FF", "#003399", "#3366CC", "#6699FF", "#FF66CC", "#FF3366", "#FF6699", "#FF33CC", "#660066"),
+                       mainbar.y.label = "Genus ASVs intersections", sets.x.label = "Genus ASVs per sample", nintersects=21, 
+                       order.by="freq",  mb.ratio = c(0.55, 0.45))
+mosquitos_ups
+
+                                      
+#upset ASVs genus by stage-------------------------
+library(svglite)
+
+head(romosqutio)
+
+
+merge3 = merge_samples(mosquito6, "tipo")
+merge3 <- as.table(t(otu_table(merge3)))
+merge3 <- replace(merge3, merge3>0, 1)
+write.table(merge3,"merge3.tmp")
+merge3 <- read.table("merge3.tmp", header=TRUE, row.names = 1)
+head(merge3, 5)
+stage_ups <- upset(merge3, nsets = 4, number.angles = 0, point.size = 1.5, line.size = 0.5, sets.bar.color = c("#336633", "#FFFF00", "#6699FF", "#FF66CC"),
+                   mainbar.y.label = "ASVs genus intersections", sets.x.label = "ASVs genus per stage", nintersects=19, 
+                   order.by="freq",  mb.ratio = c(0.55, 0.45))
+
+stage_ups
+
