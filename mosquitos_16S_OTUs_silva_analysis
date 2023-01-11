@@ -273,7 +273,7 @@ mosquitos_ups <- upset(romosqutio, nsets = 14, number.angles = 0, point.size = 1
 mosquitos_ups
 
 #upset otu by stage-------------------------
-library(svglite)
+
 merge3 = merge_samples(mosquito, "tipo")
 merge4 <- as.table(t(otu_table(merge3)))
 merge4 <- replace(merge4, merge4>0, 1)
@@ -290,7 +290,7 @@ stage_ups
 
 
 #upset genus by stage-----------
-library(svglite)
+
 merge5 = merge_samples(mosquito6, "tipo")
 merge6 <- as.table(t(otu_table(merge5)))
 merge6 <- replace(merge6, merge6>0, 1)
@@ -306,7 +306,7 @@ stage_ups <- upset(genus_stage, nsets = 4, number.angles = 0, point.size = 1.5, 
 stage_ups
 
 #upset genus by site-----------------------
-library(svglite)
+
 merge7 = merge_samples(mosquito6, "sitio")
 merge8 <- as.table(t(otu_table(merge7)))
 merge8 <- replace(merge8, merge8>0, 1)
@@ -321,3 +321,177 @@ stage_ups <- upset(genus_site, nsets = 5, number.angles = 0, point.size = 1.5, l
 
 stage_ups
 
+# -----------------------------Wolbachia-------------------------
+
+wotu <- as.matrix(read.table("wolbachia.tab", header = T, row.names = 1, sep = " "))
+wOTU = otu_table(otu_table(otu, taxa_are_rows = T), "sample_data")
+taximat = as.matrix(read.table("wolbachia.tax", header=T, row.names=1, sep = " "))
+
+taxi=tax_table(taximat)
+wolbachia = phyloseq (OTU, taxi)
+
+mosquito_data=read.table("metadata_test.txt", header = T, row.names = 1, sep = "\t")
+sampledata=sample_data(data.frame(id=mosquito_data$SampleID, sitio=mosquito_data$sito, tipo=mosquito_data$tipo, row.names = sample_names(wolbachia)))
+
+head(mosquito_data)
+wolbachia = phyloseq(OTU, taxi, sampledata)
+
+wolbachia
+sample_data(wolbachia)
+
+
+#Upsets Wolbachia-------------
+
+
+wolbachia01 <- OTU
+wolbachia01[wolbachia01 > 0] = 1
+colnames(wolbachia01) <- c("eggs_s1", "eggs_s2", "larvaes_s1", "larvaes_s2", "females_s1",
+                          "females_s2", "females_s3", "females_s4", "females_s5", "males_s1",
+                          "males_s2", "males_s3", "males_s4", "males_s5")
+head(wolbachia01,5)
+
+write.csv(wolbachia01, "01wolbachia.csv")
+rowolbachia <- read.csv("01wolbachia.csv", header=T, row.names=1)
+head(rowolbachia, 5)
+
+getPalette = colorRampPalette(brewer.pal(8, "Accent"))
+paleto = getPalette(14)
+
+wolbachia_ups_allsamples <- upset(rowolbachia, nsets = 14, number.angles = 0, point.size = 1.5, line.size = 0.5,
+                       sets = c("eggs_s1", "eggs_s2", "larvaes_s1", "larvaes_s2", "females_s1",
+                                "females_s2", "females_s3", "females_s4", "females_s5", "males_s1",
+                                "males_s2", "males_s3", "males_s4", "males_s5"), 
+                       sets.bar.color = c("chartreuse4",	"chartreuse3",	"yellow3",	"yellow2",	"violetred4",	"violetred3",	"violetred2",	"violetred1",	"violetred",
+                                          "royalblue4",	"royalblue3",	"royalblue2",	"royalblue1",	"royalblue"),
+                       mainbar.y.label = "otus intersections", sets.x.label = "otus per sample", nintersects=60, 
+                       order.by="freq",  mb.ratio = c(0.55, 0.45), keep.order = TRUE)
+wolbachia_ups_allsamples
+
+#upset otu by stage----------------------------------
+
+merge2 = merge_samples(wolbachia, "tipo")
+merge2 <- as.table(t(otu_table(merge2)))
+merge2 <- replace(merge2, merge2>0, 1)
+write.table(merge2,"merge2.tmp")
+merge2 <- read.table("merge2.tmp", header=TRUE, row.names = 1)
+wolbachia_ups_stage <- upset(merge2, nsets = 4, number.angles = 0, point.size = 1.5,
+                         sets = c("eggs", "larves", "females", "males"),
+                         line.size = 0.5, sets.bar.color = c("chartreuse4",	"yellow3",	"violetred3",	"royalblue4"),
+                   mainbar.y.label = "otus intersections", sets.x.label = "otus per stage", nintersects=19, 
+                   order.by="freq",  mb.ratio = c(0.55, 0.45), keep.order = TRUE)
+
+wolbachia_ups_stage
+
+
+#wolbachia upset by site--------------------
+
+merge3 = merge_samples(wolbachia, "sitio")
+merge3 <- as.table(t(otu_table(merge3)))
+merge3 <- replace(merge3, merge3>0, 1)
+write.table(merge3,"merge3.tmp")
+merge3 <- read.table("merge3.tmp", header=TRUE, row.names = 1)
+wolbachia_ups_site <- upset(merge3, sets = c("s1", "s2", "s3", "s4", "s5"),
+                        nsets = 5, number.angles = 0, point.size = 1.5, line.size = 0.5,
+                        sets.bar.color = c("green4",	"yellow4",	"orangered4",	"lightskyblue",	"lightpink4"),
+                   mainbar.y.label = "Wolbachia intersections", sets.x.label = "Wolbachia per site", nintersects=19, 
+                   order.by="freq",  mb.ratio = c(0.55, 0.45), keep.order = TRUE)
+
+wolbachia_ups_site
+
+
+bpprc <- read.table("/home/apolinar/para_articulo/dfam_cry/tabla_cry_to01", header=TRUE, row.names = 1)
+crydom_ups_site <- upset(bpprc, sets = c("d1", "d2", "d3"),
+                            nsets = 3, number.angles = 0, point.size = 1.5, line.size = 0.5,
+                            sets.bar.color = c("green4",	"yellow4",	"orangered4"),
+                            mainbar.y.label = "dom intersections", sets.x.label = "dom", nintersects=19, 
+                            order.by="freq",  mb.ratio = c(0.55, 0.45), keep.order = TRUE)
+
+crydom_ups_site
+
+
+# ---------------------------- bacillus--------------------------
+
+otu <- as.matrix(read.table("/home/testuser/Documents/UAMC/mosquitos/para_articulo/bacillus.tab", header = T, row.names = 1, sep = " "))
+OTU = otu_table(otu_table(otu, taxa_are_rows = T), "sample_data")
+taximat = as.matrix(read.table("/home/testuser/Documents/UAMC/mosquitos/para_articulo/bacillus.tax", header=T, row.names=1, sep = " "))
+
+taxi=tax_table(taximat)
+bacillus = phyloseq (OTU, taxi)
+
+mosquito_data=read.table("/home/testuser/Documents/UAMC/mosquitos/para_articulo/r_scrip/metadata_test.txt", header = T, row.names = 1, sep = "\t")
+sampledata=sample_data(data.frame(id=mosquito_data$SampleID, sitio=mosquito_data$sito, tipo=mosquito_data$tipo, row.names = sample_names(bacillus)))
+
+head(mosquito_data)
+bacillus = phyloseq(OTU, taxi, sampledata)
+
+bacillus
+sample_data(bacillus)
+
+
+#Upsets Bacillus--------------------------------------------------
+#use group.by = "sets" para colocar orden por grupos de muestras
+library(UpSetR)
+library(RColorBrewer)
+
+bacillus01 <- OTU
+bacillus01[bacillus01 > 0] = 1
+colnames(bacillus01) <- c("eggs_s1", "eggs_s2", "larvaes_s1", "larvaes_s2", "females_s1",
+                          "females_s2", "females_s3", "females_s4", "females_s5", "males_s1",
+                          "males_s2", "males_s3", "males_s4", "males_s5")
+head(bacillus01,5)
+
+write.csv(bacillus01, "01bacillus.csv")
+robacillus <- read.csv("01bacillus.csv", header=T, row.names=1)
+head(robacillus, 5)
+
+getPalette = colorRampPalette(brewer.pal(8, "Accent"))
+paleto = getPalette(14)
+
+bacillus_ups <- upset(robacillus, nsets = 14, sets = c("eggs_s1", "eggs_s2", "larvaes_s1", "larvaes_s2", "females_s1",
+                                                       "females_s2", "females_s3", "females_s4", "females_s5", "males_s1",
+                                                       "males_s2", "males_s3", "males_s4", "males_s5"), number.angles = 0, point.size = 1.5, line.size = 0.5,
+                      sets.bar.color = c("chartreuse4",	"chartreuse3",	"yellow3",	"yellow2",	"violetred4",	"violetred3",	"violetred2",	"violetred1",	"violetred",	"royalblue4",	"royalblue3",	"royalblue2",	"royalblue1",	"royalblue"),
+                      mainbar.y.label = "otus intersections", sets.x.label = "otus per sample", nintersects=60, 
+                      order.by="freq",  mb.ratio = c(0.55, 0.45), keep.order = TRUE, group.by = "sets")
+bacillus_ups
+
+#upset only same samples metagenome-------------
+
+bacillus_ups_met16 <- upset(robacillus, nsets = 8, sets = c("eggs_s1", "eggs_s2", "larvaes_s1", "larvaes_s2", "females_s1",
+                                                            "females_s2", "males_s1",
+                                                            "males_s2"), number.angles = 0, point.size = 1.5, line.size = 0.5,
+                            sets.bar.color = c("chartreuse4",	"chartreuse3",	"yellow3",	"yellow2",	"violetred4",	"violetred3",
+                                               "royalblue4",	"royalblue3"),
+                            mainbar.y.label = "otus intersections", sets.x.label = "otus per sample", nintersects=60, 
+                            order.by="freq",  mb.ratio = c(0.55, 0.45), keep.order = TRUE )
+bacillus_ups_met16
+
+
+#upset otu by stage------------------------
+
+merge2 = merge_samples(bacillus, "tipo")
+merge2 <- as.table(t(otu_table(merge2)))
+merge2 <- replace(merge2, merge2>0, 1)
+write.table(merge2,"merge2.tmp")
+merge2 <- read.table("merge2.tmp", header=TRUE, row.names = 1)
+stage_ups_tipo <- upset(merge2, sets = c("eggs", "larves", "females", "males"), nsets = 4, number.angles = 0, point.size = 1.5, line.size = 0.5, 
+                        sets.bar.color = c("chartreuse4",	"yellow3",	"violetred3",	"royalblue4"),
+                        mainbar.y.label = "otus intersections", sets.x.label = "otus per stage", nintersects=19, 
+                        order.by="freq", mb.ratio = c(0.55, 0.45), keep.order = TRUE)
+
+stage_ups_tipo
+
+
+#---- upset by site----------------
+
+merge3 = merge_samples(bacillus, "sitio")
+merge3 <- as.table(t(otu_table(merge3)))
+merge3 <- replace(merge3, merge3>0, 1)
+write.table(merge3,"merge3.tmp")
+merge3 <- read.table("merge3.tmp", header=TRUE, row.names = 1)
+stage_ups_sitio <- upset(merge3, nsets = 5, sets = c("s1", "s2", "s3", "s4", "s5"), number.angles = 0, point.size = 1.5, line.size = 0.5,
+                         sets.bar.color = c("green4",	"yellow4",	"orangered4",	"lightskyblue",	"lightpink4"),
+                         mainbar.y.label = "Bacillus intersections", sets.x.label = "Bacillus per site", nintersects=19, 
+                         order.by="freq",  mb.ratio = c(0.55, 0.45), keep.order = TRUE)
+
+stage_ups_sitio
