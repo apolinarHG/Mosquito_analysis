@@ -16,9 +16,9 @@ library(pheatmap)
 options(scipen=999)
 ##In [2]:
   # Load OFU table
-ofu <- as.matrix(read.csv("nac_names.tsv", header=T, row.names=1, sep="\t"))
+ofu <- as.matrix(read.csv("TABLE_nac_names.tsv", header=T, row.names=1, sep="\t"))
 #run whit all anotated information
-#ofu <- as.matrix(read.csv("nac_data.tab", header=T, row.names=1, sep="\t"))
+#ofu <- as.matrix(read.csv("TABLE_nac_data.tab", header=T, row.names=1, sep="\t"))
 OFU <- otu_table(ofu, taxa_are_rows=T)
 ##In [3]:
   # Load ontology table
@@ -32,7 +32,7 @@ subsmosquito
 
 ##In [5]:
   # Load metadata and denote variables
-metadata <- read.csv("metadata_moscos", header=T, sep="\t")
+metadata <- read.csv("TABLE_metadata_moscos", header=T, sep="\t")
 sampledata=sample_data(data.frame(sample_id=metadata$salmple_id, id=metadata$id, etapa=metadata$etapa, lugar=metadata$lugar, temperatura_C=metadata$temperatura_C, presion_hPa=metadata$presion_hPa, altura=metadata$hora, fecha=metadata$fecha, sexo=metadata$sexo, tipo=metadata$tipo, longitud=metadata$longitud, latitud=metadata$latitud, row.names = sample_names(subsmosquito)))
 
 subsmosquito <- phyloseq(OFU, ONTO, sampledata)
@@ -407,14 +407,14 @@ kps + geom_bar(aes(), stat = "identity", position = "stack") +
 
 
 #-----kingdom 
-kken <- as.matrix(read.table("/home/apolinar/para_articulo/metagenoma/king_kraken.tab", header = T, row.names = 1, sep = "\t"))
+kken <- as.matrix(read.table("TABLE_king_kraken.tab", header = T, row.names = 1, sep = "\t"))
 KKEN = otu_table(otu_table(kpen, taxa_are_rows = T), "sample_data")
-taxikk = as.matrix(read.table("/home/apolinar/para_articulo/metagenoma/king_kraken.tab.tax", header=T, row.names=1, sep = "\t"))
+taxikk = as.matrix(read.table("TABLE_king_kraken.tab.tax", header=T, row.names=1, sep = "\t"))
 
 kktax=tax_table(taxikk)
 kk_mosquito = phyloseq (KKEN, kktax)
 
-metadata <- read.csv("/home/apolinar/para_articulo/metagenoma/metadata_moscos", header=T, sep="\t")
+metadata <- read.csv("TABLE_metadata_moscos", header=T, sep="\t")
 sampledata=sample_data(data.frame(sample_id=metadata$salmple_id, id=metadata$id, etapa=metadata$etapa, lugar=metadata$lugar, temperatura_C=metadata$temperatura_C, presion_hPa=metadata$presion_hPa, altura=metadata$hora, fecha=metadata$fecha, sexo=metadata$sexo, tipo=metadata$tipo, longitud=metadata$longitud, latitud=metadata$latitud, row.names = sample_names(kk_mosquito)))
 
 head(metadata)
@@ -446,16 +446,16 @@ pgs + geom_bar(aes(), stat = "identity", position = "stack") +
 ####heatmap for toxins bpprc#####
 #################################
 
-bpp <- as.matrix(read.table("/home/testuser/Documents/UAMC/mosquitos/para_articulo/metagenoma/tabla_bpprc.tab", header = T, row.names = 1, sep = "\t"))
+bpp <- as.matrix(read.table("TABLE_tabla_bpprc.tab", header = T, row.names = 1, sep = "\t"))
 
 BPP = otu_table(otu_table(bpp, taxa_are_rows = T), "sample_data")
-taximat = as.matrix(read.table("/home/testuser/Documents/UAMC/mosquitos/para_articulo/metagenoma/tabla_bpprc.tax", header=T, row.names=1, sep = "\t"))
+taximat = as.matrix(read.table("TABLE_tabla_bpprc.tax", header=T, row.names=1, sep = "\t"))
 
 
 taxi=tax_table(taximat)
 toxinas = phyloseq (BPP, taxi)
 
-mosquito_data=read.table("/home/testuser/Documents/UAMC/mosquitos/para_articulo/metagenoma/metadata_bpprc.txt", header = T, row.names = 1, sep = "\t")
+mosquito_data=read.table("TABLE_metadata_bpprc.txt", header = T, row.names = 1, sep = "\t")
 sampledata=sample_data(data.frame(id=mosquito_data$SampleID, sitio=mosquito_data$site, tipo=mosquito_data$type, row.names = sample_names(toxinas)))
 
 toxinas = phyloseq(BPP, taxi, sampledata)
@@ -473,13 +473,13 @@ plot_heatmap(mosquito, "class", taxa.label = "protein", sample.order = c("eggs1"
 
 
 #####by type ######
-bpp <- as.matrix(read.table("/home/testuser/Documents/UAMC/mosquitos/para_articulo/metagenoma/bpprc_type.tab", header = T, row.names = 1, sep = "\t"))
+bpp <- as.matrix(read.table("TABLE_bpprc_type.tab", header = T, row.names = 1, sep = "\t"))
 BPP = otu_table(otu_table(bpp, taxa_are_rows = T), "sample_data")
-taximat = as.matrix(read.table("/home/testuser/Documents/UAMC/mosquitos/para_articulo/metagenoma/bpprc_type.tax", header=T, row.names=1, sep = "\t"))
+taximat = as.matrix(read.table("TABLE_bpprc_type.tax", header=T, row.names=1, sep = "\t"))
 taxi=tax_table(taximat)
 toxinas = phyloseq (BPP, taxi)
 
-mosquito_data=read.table("/home/testuser/Documents/UAMC/mosquitos/para_articulo/metagenoma/metadata_bpprc.txt", header = T, row.names = 1, sep = "\t")
+mosquito_data=read.table("TABLE_metadata_bpprc.txt", header = T, row.names = 1, sep = "\t")
 sampledata=sample_data(data.frame(id=mosquito_data$SampleID, sitio=mosquito_data$site, tipo=mosquito_data$type, row.names = sample_names(toxinas)))
 
 
