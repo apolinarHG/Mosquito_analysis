@@ -1,0 +1,323 @@
+####mosquitos 16S OTUs silva#####
+
+library(ggplot2)
+library(phyloseq)
+library(ape)
+library(DESeq2)
+library(forcats)
+library(ggrepel)
+library(ggsignif)
+library(gplots)
+library(gridExtra)
+library(limma)
+library(microbiome)
+library(RColorBrewer)
+library(reshape2)
+library(svglite)
+library(tidverse)
+library(tidyverse)
+library(UpSetR)
+library(vegan)
+
+### Load files-------------------------
+
+otu <- as.matrix(read.table("moscos_16S_os.txt", header = T, row.names = 1, sep = "\t"))
+OTU = otu_table(otu_table(otu, taxa_are_rows = T), "sample_data")
+taximat = as.matrix(read.table("moscos_16S_tax_os.txt", header=T, row.names=1, sep = "\t"))
+
+taxi=tax_table(taximat)
+mosquito = phyloseq (OTU, taxi)
+
+mosquito_data=read.table("metadata_test.txt", header = T, row.names = 1, sep = "\t")
+sampledata=sample_data(data.frame(id=mosquito_data$SampleID, sitio=mosquito_data$sito, tipo=mosquito_data$tipo, row.names = sample_names(mosquito)))
+
+mosquito = phyloseq(OTU, taxi, sampledata)
+
+mosquito
+sample_data(mosquito)
+
+#estimate richness---------------------
+plot_richness(mosquito)
+estimate_richness(mosquito)
+richness <- estimate_richness(mosquito)
+write.csv(richness, "mosquito_richness.csv")
+head(richness)
+
+
+#plot diversity ----------------------
+div_tab<- read.csv("mosquito_richness.csv")
+div_tab_data<-cbind(div_tab, sampledata)
+div_tab_data$id <- factor(div_tab_data$id, levels=c("eggs_s1", "eggs_s2", "larves_s1", "larves_s2", "females_s1", "females_s2", "females_s3",
+                                         "females_s4", "females_s5", "males_s1",  "males_s2", "males_s3", "males_s4", "males_s5"))
+#shannon
+div_tab_data_ns <-subset(div_tab_data, tipo!= "stage")
+div_tab_data_ns$tipo <- factor(div_tab_data_ns$tipo, levels=c("eggs", "larves", "males", "females"))
+shannon_tipo <- ggplot(div_tab_data_ns, aes(tipo, Shannon, fill=tipo)) + geom_boxplot() + geom_point(size = 1.5) + 
+  scale_fill_manual(values = c("darkgreen", "yellow", "dodgerblue", "hotpink")) + 
+  stat_signif(test = t.test, map_signif_level = TRUE, comparisons = 
+                list(c("eggs", "larves"), c("eggs", "females"), c("males", "females"))) + 
+  theme_light() + theme(text = element_text(size=15), legend.position = "none", axis.text.x=element_text(angle=90, hjust=1)) +
+  scale_x_discrete(labels=c("eggs", "larves", "males", "females"))
+shannon_tipo
+
+#simpson
+simpson_tipo <- ggplot(div_tab_data_ns, aes(tipo, Simpson, fill=tipo)) + geom_boxplot() + geom_point(size = 1.5) + 
+  scale_fill_manual(values = c("darkgreen", "yellow", "dodgerblue", "hotpink")) + 
+  stat_signif(test = t.test, map_signif_level = TRUE, comparisons = 
+                list(c("eggs", "larves"), c("eggs", "females"), c("males", "females"))) + 
+  theme_light() + theme(text = element_text(size=15), legend.position = "none", axis.text.x=element_text(angle=90, hjust=1)) +
+  scale_x_discrete(labels=c("eggs", "larves", "males", "females"))
+simpson_tipo
+
+#Observed
+Observed_tipo <- ggplot(div_tab_data_ns, aes(tipo, Observed, fill=tipo)) + geom_boxplot() + geom_point(size = 1.5) + 
+  scale_fill_manual(values = c("darkgreen", "yellow", "dodgerblue", "hotpink")) + 
+  stat_signif(test = t.test, map_signif_level = TRUE, comparisons = 
+                list(c("eggs", "larves"), c("eggs", "females"), c("males", "females"))) + 
+  theme_light() + theme(text = element_text(size=15), legend.position = "none", axis.text.x=element_text(angle=90, hjust=1)) +
+  scale_x_discrete(labels=c("eggs", "larves", "males", "females"))
+Observed_tipo
+
+#Chao1
+Chao1_tipo <- ggplot(div_tab_data_ns, aes(tipo, Chao1, fill=tipo)) + geom_boxplot() + geom_point(size = 1.5) + 
+  scale_fill_manual(values = c("darkgreen", "yellow", "dodgerblue", "hotpink")) + 
+  stat_signif(test = t.test, map_signif_level = TRUE, comparisons = 
+                list(c("eggs", "larves"), c("eggs", "females"), c("males", "females"))) + 
+  theme_light() + theme(text = element_text(size=15), legend.position = "none", axis.text.x=element_text(angle=90, hjust=1)) +
+  scale_x_discrete(labels=c("eggs", "larves", "males", "females"))
+Chao1_tipo
+
+
+#-----------------taxomonic summary ---------------------
+
+#by genus and stage
+mosquitog <- tax_glom(mosquito, taxrank = "Genus")
+
+stage=merge_samples(mosquitog, "tipo", fun=sum)
+stage_transf <- transform_sample_counts(stage, function(OTU) OTU/sum(OTU))
+stage_g_genus <- psmelt(stage_transf)
+stage_g_genus$Genus <- as.character(stage_g_genus$Genus)
+stage_transf
+#rename genus with < 02.1% abundance or other value
+stage_g_genus$Genus[stage_g_genus$Abundance < 0.021] <- "<0.021 abund."
+unique(stage_g_genus$Genus)
+
+#plot with condensed phyla into "unknown" category
+options(repr.plot.width=10, repr.plot.height=5)
+pg <- ggplot(data = stage_g_genus, aes(x=Sample, y=Abundance, fill=Genus))
+pg + geom_bar(aes(), stat = "identity", position = "stack") +
+  scale_fill_manual(values = c("gray",  "black", "gold1", "brown4", "red", "darkolivegreen3", "darkolivegreen4", "yellow", "purple3", "lightskyblue", "red3", "yellow3",
+                               "yellow4", "yellowgreen", "coral", "green", "coral4", "orange", "gold3", "chocolate1", "cyan4", "palevioletred3", "darkslategray3", "salmon", "tan1", "lightseagreen",
+                               "firebrick1", "blue", "darkturquoise")) + xlab("stage") + ylab("Relative abundance") +
+  theme(legend.position = "right", legend.text = element_text(size = 9)) + guides(fill=guide_legend(nrow = 15))+
+  theme(axis.text.x = element_text(angle = 90, hjust = 1), axis.text = element_text(size = 12)) + scale_x_discrete(limits=c("eggs", "larves", "females", "males"))
+
+
+#for genus and sample ------------------------------------------------------
+
+samples_transf <- transform_sample_counts(mosquito, function(OTU) OTU/sum(OTU))
+samples_g_genus <- psmelt(samples_transf)
+samples_g_genus$Genus <- as.character(samples_g_genus$Genus)
+
+#rename genus with < 1.5% abundance or other value
+samples_g_genus$Genus[samples_g_genus$Abundance < 0.045] <- "<0.045 abund."
+unique(samples_g_genus$Genus)
+
+#plot with condensed phyla into "unknown" category
+options(repr.plot.width=10, repr.plot.height=5)
+pgs <- ggplot(data = samples_g_genus, aes(x=Sample, y=Abundance, fill=Genus))
+pgs + geom_bar(aes(), stat = "identity", position = "stack") +
+  scale_fill_manual(values = c("gray", "black", "red", "darkolivegreen3", "purple3", "lightskyblue", "red3", "yellow4", "maroon", "olivedrab1", "yellowgreen",  "coral", "coral4",
+                               "orange", "gold", "chocolate1", "palevioletred3", "darkslategray3", "salmon", "blue",
+                               "darkturquoise")) + xlab("stage") + ylab("Relative abundance") +
+  theme(legend.position = "right", legend.text = element_text(size = 9)) + guides(fill=guide_legend(nrow = 15))+
+  theme(axis.text.x = element_text(angle = 90, hjust = 1), axis.text = element_text(size = 12)) + scale_x_discrete(limits=c("eggs_s1", "eggs_s2", "larves_s1", "larves_s2", "females_s1",
+                                                                                                                            "females_s2", "females_s3", "females_s4", "females_s5", "males_s1", 
+                                                                                                                            "males_s2", "males_s3", "males_s4", "males_s5"))
+                                                                                                                            
+
+#by phylum and stage----------------------------
+mosquitog <- tax_glom(mosquito, taxrank = "Phylum")
+
+stage=merge_samples(mosquitog, "tipo", fun=sum)
+stage_transf <- transform_sample_counts(stage, function(OTU) OTU/sum(OTU))
+stage_p_phylum <- psmelt(stage_transf)
+stage_p_phylum$Phylum <- as.character(stage_p_phylum$Phylum)
+
+#rename genus with < 0.6 % abundance or other value
+stage_p_phylum$Phylum[stage_p_phylum$Abundance < 0.006] <- "<0.006 abund."
+unique(stage_p_phylum$Phylum)
+
+#plot with condensed phyla into "unknown" category
+options(repr.plot.width=10, repr.plot.height=5)
+pg <- ggplot(data = stage_p_phylum, aes(x=Sample, y=Abundance, fill=Phylum))
+pg + geom_bar(aes(), stat = "identity", position = "stack") +
+  scale_fill_manual(values = c("gray", "khaki1", "chartreuse4", "deeppink3", "chartreuse3",
+                               "firebrick1", "yellow2", "orange1", "dodgerblue4", "springgreen",
+                               "coral", "salmon", "green")) + xlab("stage") + ylab("Relative abundance") +
+  theme(legend.position = "right", legend.text = element_text(size = 9)) + guides(fill=guide_legend(nrow = 15))+
+  theme(axis.text.x = element_text(angle = 90, hjust = 1), axis.text = element_text(size = 12)) + scale_x_discrete(limits=c("eggs", "larves", "females", "males"))
+  
+#for phyla and sample ------------------------------------------------------
+
+samples_transf <- transform_sample_counts(mosquitog, function(OTU) OTU/sum(OTU))
+samples_p_phylum <- psmelt(samples_transf)
+samples_p_phylum$Phylum <- as.character(samples_p_phylum$Phylum)
+
+#rename genus with < 1.5% abundance or other value
+samples_p_phylum$Phylum[samples_p_phylum$Abundance < 0.02] <- "<0.02 abund."
+unique(samples_p_phylum$Phylum)
+
+#plot with condensed phyla into "unknown" category
+options(repr.plot.width=10, repr.plot.height=5)
+pgs <- ggplot(data = samples_p_phylum, aes(x=Sample, y=Abundance, fill=Phylum))
+pgs + geom_bar(aes(), stat = "identity", position = "stack") +
+  scale_fill_manual(values = c("gray", "khaki1", "chartreuse4", "deeppink3", "chartreuse3", "firebrick1", "orange1", "dodgerblue4", "springgreen", "coral", "salmon" )) + xlab("stage") + ylab("Relative abundance") +
+  theme(legend.position = "right", legend.text = element_text(size = 9)) + guides(fill=guide_legend(nrow = 15))+
+  theme(axis.text.x = element_text(angle = 90, hjust = 1), axis.text = element_text(size = 12)) + scale_x_discrete(limits=c("eggs_s1", "eggs_s2", "larves_s1", "larves_s2", "females_s1",
+                                                                                                                            "females_s2", "females_s3", "females_s4", "females_s5", "males_s1",
+                                                                                                                            "males_s2", "males_s3", "males_s4", "males_s5"))
+#------------ orderings --------------------
+
+
+gp.ord <- ordinate(mosquito, "PCoA", "bray")
+ord1 <- plot_ordination(mosquito, gp.ord, type="Samples", color= "tipo", shape="sitio")
+ord2 <- ord1 + scale_shape_manual(values=c(15,16,17,18,3))+theme(axis.text.x = element_text(angle = 90, hjust = 1), axis.text=element_text(size=12),
+                                                       legend.text=element_text(size=12),strip.text.x = element_text(size = 12))+geom_point(size=4)
+ord2
+
+
+gp.ord <- ordinate(mosquito, "NMDS", "bray")
+ord3 <- plot_ordination(mosquito, gp.ord, type="Samples", color= "tipo", shape="sitio", label="tipo")
+ord4 <- ord3 + scale_shape_manual(values=c(15,16,17,18,3)) + theme(axis.text.x = element_text(angle = 90, hjust = 1), axis.text=element_text(size=12),
+                                                       legend.text=element_text(size=12),strip.text.x = element_text(size = 12))+geom_point(size=4)
+ord4
+
+#-------------------------------Upsets------------------------------------
+
+mosquito01 <- OTU
+mosquito01[mosquito01 > 0] = 1
+colnames(mosquito01) <- c("eggs_s1", "eggs_s2", "larvaes_s1", "larvaes_s2", "females_s1",
+                          "females_s2", "females_s3", "females_s4", "females_s5", "males_s1",
+                          "males_s2", "males_s3", "males_s4", "males_s5")
+head(mosquito01,5)
+
+write.csv(mosquito01, "01mosquito.csv")
+romosqutio <- read.csv("01mosquito.csv", header=T, row.names=1)
+head(romosqutio, 5)
+
+getPalette = colorRampPalette(brewer.pal(8, "Accent"))
+paleto = getPalette(14)
+
+mosquitos_ups <- upset(romosqutio, nsets = 14, number.angles = 0, point.size = 1.5, line.size = 0.5, sets.bar.color = c("#006600", "#336633", "#FFFF00", "#FFFF66", "#3366CC", "#3366CC", "#0033FF", "#003399", "#FF3366", "#0066FF", "#FF66CC", "#FF6699", "#FF33CC", "#660066"),
+                       mainbar.y.label = "otus intersections", sets.x.label = "otus per sample", nintersects=60, 
+                       order.by="freq",  mb.ratio = c(0.55, 0.45))
+mosquitos_ups
+
+#upset otu by stage-----------------------
+
+library(svglite)
+merge2 = merge_samples(mosquito, "tipo")
+merge2 <- as.table(t(otu_table(merge2)))
+merge2 <- replace(merge2, merge2>0, 1)
+write.table(merge2,"merge2.tmp")
+merge2 <- read.table("merge2.tmp", header=TRUE, row.names = 1)
+stage_ups <- upset(merge2, nsets = 4, number.angles = 0, point.size = 1.5, line.size = 0.5, sets.bar.color = c("#336633", "#FFFF00", "#6699FF", "#FF66CC"),
+                       mainbar.y.label = "otus intersections", sets.x.label = "otus per sample", nintersects=19, 
+                       order.by="freq",  mb.ratio = c(0.55, 0.45))
+
+stage_ups
+
+#upset otu by site----------
+
+merge2 = merge_samples(mosquito, "sitio")
+merge2 <- as.table(t(otu_table(merge2)))
+merge2 <- replace(merge2, merge2>0, 1)
+write.table(merge2,"merge2.tmp")
+merge2 <- read.table("merge2.tmp", header=TRUE, row.names = 1)
+stage_ups <- upset(merge2, nsets = 5, number.angles = 0, point.size = 1.5, line.size = 0.5, sets.bar.color = c("#336633", "#FFFF00", "#6699FF", "#FF66CC", "aquamarine1"),
+                   mainbar.y.label = "otus intersections", sets.x.label = "otus per site", nintersects=19, 
+                   order.by="freq",  mb.ratio = c(0.55, 0.45))
+
+stage_ups
+
+#upset complete by Genus
+
+rsubmosquito6 <-transform_sample_counts(mosquito, function(x) x / sum(x))
+mosquito6 <- tax_glom(rsubmosquito6, taxrank = "Genus")
+mosquito6
+# Extract abundance matrix from the phyloseq object
+OTU1 = as(otu_table(mosquito6), "matrix")
+# transpose if necessary
+#if(taxa_are_rows(mosquito6)){OTU1 <- t(OTU1)}
+# Coerce to data.frame
+OTUdf = as.data.frame(OTU1)
+
+mosquito601 <- OTU1
+mosquito601[mosquito601 > 0] = 1
+colnames(mosquito601) <- c("eggs_s1", "eggs_s2", "larvaes_s1", "larvaes_s2", "females_s1",
+                           "females_s2", "females_s3", "females_s4", "females_s5", "males_s1",
+                           "males_s2", "males_s3", "males_s4", "males_s5")
+head(mosquito601,5)
+
+write.csv(mosquito601, "mosquito6.csv")
+romosqutio <- read.csv("mosquito6.csv", header=T, row.names=1)
+head(romosqutio, 5)
+
+getPalette = colorRampPalette(brewer.pal(8, "Accent"))
+paleto = getPalette(14)
+
+mosquitos_ups <- upset(romosqutio, nsets = 14, number.angles = 0, point.size = 1.5, line.size = 0.5, sets.bar.color = c("#006600", "#336633", "#FFFF00", "#FFFF66", "#0066FF", "#0033FF", "#003399", "#3366CC", "#FF33CC", "#FF66CC", "#FF3366", "#FF6699", "#6699FF", "#660066"),
+                       mainbar.y.label = "Genus intersections", sets.x.label = "Genus per sample", nintersects=21, 
+                       order.by="freq",  mb.ratio = c(0.55, 0.45))
+mosquitos_ups
+
+#upset otu by stage-------------------------
+library(svglite)
+merge3 = merge_samples(mosquito, "tipo")
+merge4 <- as.table(t(otu_table(merge3)))
+merge4 <- replace(merge4, merge4>0, 1)
+
+head(merge4, 5)
+write.table(merge4,"merge3.tmp")
+test <- read.table("merge3.tmp", header=TRUE, row.names = 1)
+head(test, 5) 
+stage_ups <- upset(test, nsets = 4, number.angles = 0, point.size = 1.5, line.size = 0.5, sets.bar.color = c("#336633", "#FFFF00", "#6699FF", "#FF66CC"),
+                   mainbar.y.label = "otus intersections", sets.x.label = "otus per stage", nintersects=19, 
+                   order.by="freq",  mb.ratio = c(0.55, 0.45))
+
+stage_ups
+
+
+#upset genus by stage-----------
+library(svglite)
+merge5 = merge_samples(mosquito6, "tipo")
+merge6 <- as.table(t(otu_table(merge5)))
+merge6 <- replace(merge6, merge6>0, 1)
+
+head(merge6, 5)
+write.table(merge6,"genus_stage.tmp")
+genus_stage <- read.table("genus_stage.tmp", header=TRUE, row.names = 1)
+head(genus_stage, 5) 
+stage_ups <- upset(genus_stage, nsets = 4, number.angles = 0, point.size = 1.5, line.size = 0.5, sets.bar.color = c("#336633", "#FFFF00", "#6699FF", "#FF66CC"),
+                   mainbar.y.label = "genus intersections", sets.x.label = "genus per stage", nintersects=19, 
+                   order.by="freq",  mb.ratio = c(0.55, 0.45))
+
+stage_ups
+
+#upset genus by site-----------------------
+library(svglite)
+merge7 = merge_samples(mosquito6, "sitio")
+merge8 <- as.table(t(otu_table(merge7)))
+merge8 <- replace(merge8, merge8>0, 1)
+
+head(merge8, 5)
+write.table(merge8,"genus_site.tmp")
+genus_site <- read.table("genus_site.tmp", header=TRUE, row.names = 1)
+head(genus_site, 5) 
+stage_ups <- upset(genus_site, nsets = 5, number.angles = 0, point.size = 1.5, line.size = 0.5, sets.bar.color = c("chartreuse4", "chartreuse", "saddlebrown", "steelblue2", "plum"),
+                   mainbar.y.label = "genus intersections", sets.x.label = "genus per site", nintersects=19, 
+                   order.by="freq",  mb.ratio = c(0.55, 0.45))
+
+stage_ups
+
