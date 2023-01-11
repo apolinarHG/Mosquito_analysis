@@ -1,0 +1,9 @@
+Sample_ID	ID	SampleID	site	type
+females_s1	females_s1	females_s1	s1	females
+females_s2	females_s2	females_s2	s2	females
+eggs_s2	eggs_s2	eggs_s2	s2	eggs
+eggs_s1	eggs_s1	eggs_s1	s1	eggs
+larvae_s1	larvae_s1	larvae_s1	s1	larvae
+larvae_s2	larvae_s2	larvae_s2	s2	larvae
+males_s1	males_s1	males_s1	s1	males
+males_s2	males_s2	males_s2	s2	males
